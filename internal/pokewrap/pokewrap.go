@@ -147,75 +147,41 @@ const URL = "https://pokeapi.co/api/v2/location-area/?offset=0&limit=20"
 
 var cache = pokecache.NewCache(5 * time.Second)
 
-func MapLocations(url string) (Response, error) {
+func fetchFromAPI[T any](url string) (T, error) {
+	var result T
+
 	body, ok := cache.Get(url)
 	if !ok {
 		res, err := http.Get(url)
 		if err != nil {
-			return Response{}, err
+			return result, err
 		}
 		defer res.Body.Close()
 
 		body, err = io.ReadAll(res.Body)
 		if err != nil {
-			return Response{}, err
+			return result, err
 		}
 		cache.Add(url, body)
 	}
-	response := Response{}
-	err := json.Unmarshal(body, &response)
+
+	err := json.Unmarshal(body, &result)
 	if err != nil {
-		return Response{}, err
+		return result, err
 	}
-	return response, nil
+	return result, nil
+}
+
+func MapLocations(url string) (Response, error) {
+	return fetchFromAPI[Response](url)
 }
 
 func ExploreLocation(location string) (ExploreResponse, error) {
 	url := LocationURL + location
-	body, ok := cache.Get(url)
-	if !ok {
-		res, err := http.Get(url)
-		if err != nil {
-			return ExploreResponse{}, err
-		}
-		defer res.Body.Close()
-
-		body, err = io.ReadAll(res.Body)
-		if err != nil {
-			return ExploreResponse{}, err
-		}
-		cache.Add(url, body)
-	}
-	response := ExploreResponse{}
-	err := json.Unmarshal(body, &response)
-	if err != nil {
-		return ExploreResponse{}, err
-	}
-	return response, nil
-
+	return fetchFromAPI[ExploreResponse](url)
 }
 
 func GetPokemon(pokemon string) (PokemonResponse, error) {
 	url := PokemonURL + pokemon
-	body, ok := cache.Get(url)
-	if !ok {
-		res, err := http.Get(url)
-		if err != nil {
-			return PokemonResponse{}, err
-		}
-		defer res.Body.Close()
-
-		body, err = io.ReadAll(res.Body)
-		if err != nil {
-			return PokemonResponse{}, err
-		}
-		cache.Add(url, body)
-	}
-	response := PokemonResponse{}
-	err := json.Unmarshal(body, &response)
-	if err != nil {
-		return PokemonResponse{}, err
-	}
-	return response, nil
-
+	return fetchFromAPI[PokemonResponse](url)
 }
